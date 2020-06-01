@@ -1,3 +1,3 @@
-# College-assignments
+# College
 
-This repository contains my college assignments.
+My college study
