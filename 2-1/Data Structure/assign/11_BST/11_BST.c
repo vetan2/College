@@ -20,7 +20,7 @@ void delete(treePtr*, int);
 void rangeSearch(treePtr, int, int);
 
 int main() {
-	int i, n, d, A[MAX_TERMS], D[MAX_TERMS];
+	int i, n, m, A[MAX_TERMS], D[MAX_TERMS];
 	treePtr tree = NULL;
 
 	// 파일 오픈
@@ -36,15 +36,16 @@ int main() {
 	preorder(tree), printf("\n");
 
 
-	fscanf(fp, "%d", &d);	// 숫자의 개수를 d에 저장
-	for (i = 0; i < d; i++)
+	fscanf(fp, "%d", &m);	// 숫자의 개수를 d에 저장
+	for (i = 0; i < m; i++)
 		fscanf(fp, "%d", D + i);	// d개의 숫자를 배열 D에 저장
-	
-	for (i = 0; i < d; i++) {
+
+	for (i = 0; i < m; i++) {
 		delete(&tree, D[i]);
 		inorder(tree);
+		printf("\n");
 	}
-		
+
 
 	fclose(fp);
 }
@@ -119,24 +120,22 @@ treePtr modifiedSearch(treePtr tree, int n) {
 
 /*
 	트리가 비어 있거나, 트리에서 숫자 n을 못 찾았다면 NULL을 반환
-	트리에서 숫자 n을 찾았다면, 그 노드의 부모 노드를 반환
-	찾은 노드가 루트 노드라면, 루트 노드를 반환
+	숫자 n을 찾았다면 찾은 노드를 반환
 */
 treePtr modifiedSearchForDelete(treePtr tree, int n) {
-	if (tree->key == n)
-		return tree;
-
 	// 트리가 비어있지 않으면 탐색을 실행
 	while (tree) {
+
+		// 트리에서 숫자 n을 찾았다면 NULL을 반환
+		if (n == tree->key)
+			return tree;
+
 		if (n < tree->key) {
 			/*
 				 n이 현재 노드의 data보다 작은데
-				현재 노드의 lchild가 없으면 NULL을 반환
+				현재 노드의 lchild가 없으면 현재 트리의 주소를 반환
 			*/
 			if (!tree->lchild)
-				return NULL;
-
-			if (tree->lchild->key == n)
 				return tree;
 
 			else
@@ -147,12 +146,9 @@ treePtr modifiedSearchForDelete(treePtr tree, int n) {
 		else {
 			/*
 				 n이 현재 노드의 data보다 큰데
-				현재 노드의 rchild가 없으면 NULL을 반환
+				현재 노드의 rchild가 없으면 현재 트리의 주소를 반환
 			*/
 			if (!tree->rchild)
-				return NULL;
-
-			if (tree->rchild->key == n)
 				return tree;
 
 			else
@@ -181,17 +177,56 @@ void preorder(treePtr tree) {
 }
 
 void delete(treePtr* tree, int d) {
-	
-	treePtr toDelParent, toDel, temp;
-	treePtr temp2;
 
-	//	삭제할 숫자를 트리에서 못 찾았다면 에러 메세지를 출력 후 return
-	if (!(toDelParent = modifiedSearchForDelete(*tree, d))) {
-		printf("Number not in the tree\n");
+	treePtr toDel = modifiedSearchForDelete(*tree, d), sub;
+	treePtr* temp;
+
+	if (!toDel)
 		return;
+
+	if (toDel == *tree) {
+		if (!toDel->lchild && !toDel->rchild) {
+			*tree = NULL;
+			free(toDel);
+			return;
+		}
+
+		if (getTreeSize(toDel->lchild) > getTreeSize(toDel->rchild))
+			sub = toDel->lchild;
+
+		else if (getTreeSize(toDel->lchild) == getTreeSize(toDel->rchild)) {
+			srand(time(NULL));
+			if (rand() % 2)
+				sub = toDel->rchild;
+
+			else
+				sub = toDel->lchild;
+		}
+
+		else
+			sub = toDel->rchild;
+
+		if (sub == toDel->lchild) {
+			temp = &(toDel->lchild);
+			while ((*temp)->rchild)
+				temp = &((*temp)->rchild);
+
+			toDel->key = (*temp)->key;
+			delete(temp, (*temp)->key);
+		}
+
+		else {
+			temp = &(toDel->lchild);
+			while ((*temp)->rchild)
+				temp = &((*temp)->rchild);
+
+			toDel->key = (*temp)->key;
+			delete(temp, (*temp)->key);
+		}
 	}
 
-	// wirte code
+	else
+		delete(&toDel, toDel->key);
 }
 
 int getTreeSize(treePtr tree) {
