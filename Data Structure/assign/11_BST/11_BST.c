@@ -20,7 +20,11 @@ void delete(treePtr*, int);
 void rangeSearch(treePtr, int, int);
 
 int main() {
-	int i, n, m, A[MAX_TERMS], D[MAX_TERMS];
+	int i;
+	int n, A[MAX_TERMS];
+	int m, D[MAX_TERMS];
+	int k1, k2, temp;
+
 	treePtr tree = NULL;
 
 	// 파일 오픈
@@ -42,10 +46,20 @@ int main() {
 
 	for (i = 0; i < m; i++) {
 		delete(&tree, D[i]);
+
 		inorder(tree);
+		printf("\n");
+		preorder(tree);
 		printf("\n");
 	}
 
+	fscanf(fp, "%d", &k1), fscanf(fp, "%d", &k2);
+	if (k1 > k2) {
+		temp = k1;
+		k1 = k2;
+		k2 = temp;
+	}
+	rangeSearch(tree, k1, k2);
 
 	fclose(fp);
 }
@@ -133,10 +147,10 @@ treePtr modifiedSearchForDelete(treePtr tree, int n) {
 		if (n < tree->key) {
 			/*
 				 n이 현재 노드의 data보다 작은데
-				현재 노드의 lchild가 없으면 현재 트리의 주소를 반환
+				현재 노드의 lchild가 없으면 NULL을 반환
 			*/
 			if (!tree->lchild)
-				return tree;
+				return NULL;
 
 			else
 				tree = tree->lchild;
@@ -146,10 +160,10 @@ treePtr modifiedSearchForDelete(treePtr tree, int n) {
 		else {
 			/*
 				 n이 현재 노드의 data보다 큰데
-				현재 노드의 rchild가 없으면 현재 트리의 주소를 반환
+				현재 노드의 rchild가 없으면 NULL을 반환
 			*/
 			if (!tree->rchild)
-				return tree;
+				return NULL;
 
 			else
 				tree = tree->rchild;
@@ -239,4 +253,15 @@ int getTreeSize(treePtr tree) {
 	}
 
 	return size;
+}
+
+void rangeSearch(treePtr tree, int k1, int k2) {
+	if (tree) {
+		rangeSearch(tree->lchild, k1, k2);
+		
+		if (k1 <= tree->key && tree->key <= k2)
+			printf("%-3d", tree->key);
+
+		rangeSearch(tree->rchild, k1, k2);
+	}
 }
