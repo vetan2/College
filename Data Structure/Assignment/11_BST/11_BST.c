@@ -192,19 +192,25 @@ void preorder(treePtr tree) {
 
 void delete(treePtr* tree, int d) {
 
+	// toDel은 d를 key로 가지는 노드의 주소
 	treePtr toDel = modifiedSearchForDelete(*tree, d), sub;
 	treePtr* temp;
 
+	// d를 key로 가지는 노드를 못 찾았다면 return
 	if (!toDel)
 		return;
 
 	if (toDel == *tree) {
+
+		// toDel(*tree)의 degree가 0이라면, 
 		if (!toDel->lchild && !toDel->rchild) {
+
 			*tree = NULL;
 			free(toDel);
 			return;
 		}
 
+		// toDel(*tree)의 key를 대체할 노드 sub를 찾는다.
 		if (getTreeSize(toDel->lchild) > getTreeSize(toDel->rchild))
 			sub = toDel->lchild;
 
@@ -221,20 +227,28 @@ void delete(treePtr* tree, int d) {
 			sub = toDel->rchild;
 
 		if (sub == toDel->lchild) {
+			
+			// temp는 toDel의 lchild에 있는 노드들 중 가장 큰 key를 갖는 노드의 주소의 주소
 			temp = &(toDel->lchild);
 			while ((*temp)->rchild)
 				temp = &((*temp)->rchild);
 
+			// toDel의 key를 *temp의 key로 대체한다.
 			toDel->key = (*temp)->key;
+
 			delete(temp, (*temp)->key);
 		}
 
 		else {
+
+			// temp는 toDel의 rchild에 있는 노드들 중 가장 작은 key를 갖는 노드의 주소의 주소
 			temp = &(toDel->lchild);
 			while ((*temp)->rchild)
 				temp = &((*temp)->rchild);
 
+			// toDel의 key를 *temp의 key로 대체한다.
 			toDel->key = (*temp)->key;
+
 			delete(temp, (*temp)->key);
 		}
 	}
@@ -243,6 +257,11 @@ void delete(treePtr* tree, int d) {
 		delete(&toDel, toDel->key);
 }
 
+/*
+	tree와 그 subtree를 포함한 노드들의 개수를 알아낸다.
+	input : 노드의 개수를 알아낼 노드의 주소
+	output : 노드들의 개수
+*/
 int getTreeSize(treePtr tree) {
 	int size = 0;
 
