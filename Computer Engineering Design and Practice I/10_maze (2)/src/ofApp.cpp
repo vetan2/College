@@ -187,14 +187,15 @@ void ofApp::draw() {
 	
 	// TO DO : DRAW MAZE; 
 	// add code here
-	if (drag_flag_maze == TRUE)
+	if (input_flag == TRUE)
 		for (i = 0; i <= 2 * M; i++) {
 			for (j = 0; j <= 2 * N; j++)
 
 				if (i % 2 == 0)
 					for (j = 1; j <= 2 * N - 1; j++) {
 						if (maze[i][j] == -1) {
-							ofDrawLine((j - 1) * gridLen, i * gridLen, (j + 1) * gridLen, i * gridLen);
+							ofDrawLine((j - 1) * gridLen, i * gridLen,
+								(j + 1) * gridLen, i * gridLen);
 							ofDrawCircle((j - 1) * gridLen, i * gridLen, 2.5);
 							ofDrawCircle((j + 1) * gridLen, i * gridLen, 2.5);
 						}
@@ -203,7 +204,8 @@ void ofApp::draw() {
 				else
 					for (j = 0; j <= 2 * N; j++)
 						if (maze[i][j] == -2) {
-							ofDrawLine(j * gridLen, (i - 1) * gridLen, j * gridLen, (i + 1) * gridLen);
+							ofDrawLine(j * gridLen, (i - 1) * gridLen,
+								j * gridLen, (i + 1) * gridLen);
 							ofDrawCircle(j * gridLen, (i - 1) * gridLen, 2.5);
 							ofDrawCircle(j * gridLen, (i + 1) * gridLen, 2.5);
 						}
@@ -215,7 +217,7 @@ void ofApp::draw() {
 		ofSetColor(200);
 		ofSetLineWidth(5);
 		if (isOpen)
-			dfsdraw();
+			drawDFS();
 		else
 			cout << "You must open file first" << endl;
 	}
@@ -382,7 +384,6 @@ bool ofApp::readFile()
 			// Input_flag is a variable for indication the type of input.
 			// If input_flag is zero, then work of line input is progress.
 			// If input_flag is one, then work of dot input is progress.
-			int input_flag = 0;
 
 			// Idx is a variable for index of array.
 			int idx = 0;
@@ -392,14 +393,15 @@ bool ofApp::readFile()
 			
 			
 			// TO DO
-			// .maz ������ input���� �޾Ƽ� ������ �ڷᱸ���� �ִ´�
 			int i, j;
-			int row = 0, col = 0;
 
 			if (!file.exists()) {
 				cout << "Target file does not exist." << endl;
 				return FALSE;
 			}
+
+			if (row)
+				freeMemory();
 
 			ofBuffer::Line it = buffer.getLines().begin();
 			string line = *it;
@@ -467,38 +469,55 @@ bool ofApp::readFile()
 
 				it++;
 
-				// line = *it;
 				line = *it;
 			}
 
 			M = (row - 1) / 2;
 			N = (col - 1) / 2;
-			gridLen = 480 / col;
-			drag_flag_maze = TRUE;
+
+			if (windowHeight / (float)(row + 10) > windowWidth / (float)(col + 10))
+				gridLen = windowWidth / (float)(col + 10);
+
+			else
+				gridLen = windowHeight / (float)(row + 10);
+
+			input_flag = TRUE;
 			return TRUE;
 			
 		}
 		else {
 			printf("  Needs a '.maz' extension\n");
-			return false;
+			return FALSE;
 		}
 	}
 }
 void ofApp::freeMemory() {
+	int j;
+	for (j = 0; j < col; j++)
+		delete maze[j];
+	delete maze;
 
-	//TO DO
-	// malloc�� memory�� free���ִ� �Լ�
+	row = 0, col = 0;
+	maze = NULL;
+
+	return;
 }
 
-bool ofApp::DFS()//DFSŽ���� �ϴ� �Լ�
-{
+void ofApp::DFS() {
 	//TO DO
-	//DFSŽ���� �ϴ� �Լ� ( 3����)
-	return FALSE;
+	return;
 }
-void ofApp::dfsdraw()
+void ofApp::drawDFS()
 {
 	//TO DO 
-	//DFS�� ������ ����� �׸���. (3���� ����)
 }
 
+void ofApp::BFS()
+{
+	//TO DO
+	return;
+}
+void ofApp::drawBFS()
+{
+	//TO DO 
+}

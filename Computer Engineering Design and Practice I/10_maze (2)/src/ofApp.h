@@ -44,20 +44,24 @@ class ofApp : public ofBaseApp {
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
+
 		bool readFile();
 		void freeMemory();
-		bool DFS();
-		void dfsdraw();
-		int HEIGHT;//�̷��� ����
-		int WIDTH;//�̷��� �ʺ�
-		char** input;//�ؽ�Ʈ ������ ��� ������ ��� ������ �迭�̴�.
-		int** visited;//�湮���θ� ������ ����
-		int maze_col;//�̷�ĭ�� ���� �ε����� ����Ų��.
-		int maze_row;//�̷�ĭ�� ���� �ε����� ����Ų��.
-		int k;
-		int isOpen; //������ ���ȴ����� �Ǵ��ϴ� ����. 0�̸� �ȿ��Ȱ� 1�̸� ���ȴ�.
-		int isDFS;//DFS�Լ��� ������״��� �Ǵ��ϴ� ����. 0�̸� ������߰� 1�̸� �����ߴ�.
-		int isBFS;//BFS�Լ��� ������״��� �Ǵ��ϴ� ����. 0�̸� ������߰� 1�̸� �����ߴ�.
+		void DFS();
+		void drawDFS();
+		void BFS();
+		void drawBFS();
+
+		int N, M;				// 미로의 가로와 세로
+		int row = 0, col = 0;	// maze의 행과 열
+		int** maze = NULL;		// 미로 배열
+		int** visited;
+		float gridLen;			// 격자의 길이
+		bool input_flag = FALSE;
+		int isOpen;
+		int isDFS;
+		int isBFS;
+
 		// Menu
 		ofxWinMenu * menu; // Menu object
 		void appMenuFunction(string title, bool bChecked); // Menu return function
@@ -74,13 +78,8 @@ class ofApp : public ofBaseApp {
 		bool bFullscreen;
 		bool bTopmost;
 		bool isdfs;
+
 		// Example functions
  		void doFullScreen(bool bFull);
 		void doTopmost(bool bTop);
-
-		int N, M;				// 미로의 가로와 세로
-		int** maze = NULL;		// 미로 배열
-
-		int gridLen;			// 격자의 길이
-		bool drag_flag_maze = FALSE;
 };
