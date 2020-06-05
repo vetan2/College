@@ -384,13 +384,6 @@ bool ofApp::readFile()
 			// Input_flag is a variable for indication the type of input.
 			// If input_flag is zero, then work of line input is progress.
 			// If input_flag is one, then work of dot input is progress.
-
-			// Idx is a variable for index of array.
-			int idx = 0;
-
-			// Read file line by line
-			int cnt = 0;
-			
 			
 			// TO DO
 			int i, j;
@@ -400,7 +393,7 @@ bool ofApp::readFile()
 				return FALSE;
 			}
 
-			if (row)
+			if (maze)
 				freeMemory();
 
 			ofBuffer::Line it = buffer.getLines().begin();
@@ -413,14 +406,24 @@ bool ofApp::readFile()
 				return FALSE;
 
 			while (size(line)) {
-				// reallocate maze's memory
 				if (!maze) {
+
+					// newly allocate maze's memory
 					maze = new int* [1];
 					maze[0] = new int[col];
 					row++;
 				}
 
 				else {
+
+					/*
+						reallocate maze's memory
+
+						먼저 maze의 값들을 temp에 임시로 저장한다.
+						maze의 메모리를 모두 해제하고 행이 하나 많게 메모리를 재할당한다.
+						maze에 temp의 값들을 저장한다.
+						temp의 메모리를 해제한다.
+					*/
 					int** temp;
 					temp = new int* [row];
 					for (i = 0; i < row; i++) {
@@ -467,14 +470,15 @@ bool ofApp::readFile()
 					}
 				}
 
+				// 한 줄 넘어가고 line은 넘어간 그 줄을 가리킨다.
 				it++;
-
 				line = *it;
 			}
 
 			M = (row - 1) / 2;
 			N = (col - 1) / 2;
-
+			
+			// 10은 화면에 여백을 남기기 위함
 			if (windowHeight / (float)(row + 10) > windowWidth / (float)(col + 10))
 				gridLen = windowWidth / (float)(col + 10);
 
@@ -483,7 +487,6 @@ bool ofApp::readFile()
 
 			input_flag = TRUE;
 			return TRUE;
-			
 		}
 		else {
 			printf("  Needs a '.maz' extension\n");
