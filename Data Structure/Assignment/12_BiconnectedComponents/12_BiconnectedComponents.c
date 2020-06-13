@@ -10,18 +10,28 @@ typedef struct _node {
 	struct _node* link;
 } node;
 
+typedef struct _edgeNode {
+	int val1, val2;
+	struct _edgeNode* link;
+} edgeNode;
+
 short int dfn[MAX_VERTICES];
 short int low[MAX_VERTICES];
 node** graph;
+edgeNode* top = NULL;
+edgeNode* bot = NULL;
 int num;
 
 void init(FILE*);
 void bicon(int, int);
+void add(int, int);
+void delete(int*, int*);
 
 int main() {
 	FILE* fp = fopen("input.txt", "r");
 	
 	init(fp);
+	bicon(3, -1);
 }
 
 void init(FILE* fp) {
@@ -73,8 +83,82 @@ void init(FILE* fp) {
 				j++;
 		}
 	}
+
+	// dfn, low, num의 초기화
+	for (i = 0; i < num; i++)
+		dfn[i] = low[i] = -1;
+	num = 0;
 }
 
 void bicon(int u, int v) {
 	// TO DO
+	node* ptr;
+	int w, x, y;
+
+	// u에 대한 dfn, low 초기화
+	dfn[u] = low[u] = num++;
+
+	// ptr이 가장 아래일 때까지
+	for (ptr = graph[u]; ptr; ptr = ptr->link) {
+		w = ptr->val;
+
+		// u보다 높이 올라가면 스택에 저장
+		if (v != w && dfn[w] < dfn[u])
+			add(u, w);
+
+		// w가 방문하지 않은 노드라면
+		if (dfn[w] < 0) {
+
+			// w 이하의 노드들에 대해 bicon 해줌
+			bicon(w, u);
+
+			low[u] = MIN2(low[u], low[w]);
+			if (low[w] >= dfn[u]) {
+				do {
+					delete(&x, &y);
+					printf("<%d, %d> ", x, y);
+				} while (!((x == u) && (y == w)));
+
+				printf("\n");
+			}
+		}
+
+		else if (w != v)low[u] = MIN2(low[u], dfn[w]);
+	}
+}
+
+// 스택에 edge <u, v>를 삽입
+void add(int u, int v) {
+	edgeNode* new = (edgeNode*)calloc(1, sizeof(edgeNode));
+	new->val1 = u, new->val2 = v, new->link = NULL;
+
+	if (!top)
+		top = bot = new;
+
+	else {
+		top->link = new;
+		top = top->link;
+	}
+}
+
+// 스택의 top을 삭제, *x와 *y는 삭제된 edge의 두 vertex를 가리킴
+void delete(int* x, int* y) {
+	edgeNode* toDel = top;
+	edgeNode* temp = bot;
+
+	if (!top)
+		return;
+
+	*x = toDel->val1, * y = toDel->val2;
+
+	if (temp == toDel)
+		top = bot = NULL;
+
+	else {
+		while (temp->link != toDel)
+			temp = temp->link;
+		temp->link = NULL, top = temp;
+	}
+
+	free(toDel);
 }
