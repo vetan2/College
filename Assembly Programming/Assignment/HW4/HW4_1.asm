@@ -56,6 +56,7 @@ main PROC
 
 	_Print:
 		call PrintResult
+		call Init
 		jmp _String
 		
 	EndProgram:
@@ -103,6 +104,15 @@ L1:
 		mov bh, [esi]
 
 		.IF bh == ' ' || bh == 0
+			.IF cl == 1
+				neg bl
+			.ENDIF
+			mov [edi], bl
+			inc edi
+			inc esi
+			pop ecx
+			loop L1
+		.ELSEIF bh == 10
 			.IF cl == 1
 				neg bl
 			.ENDIF
@@ -211,7 +221,6 @@ L1:
 		inc esi
 		inc edi
 		loop L1
-mov encrypted[esi], 0
 ret
 Encrypt ENDP
 
@@ -271,7 +280,34 @@ L1:
 		inc esi
 		inc edi
 		loop L1
-mov decrypted[esi], 0
 ret
 Decrypt ENDP
+
+Init PROC
+	mov ECX, 42
+	mov esi, 0
+	L1:
+		mov string[esi], 0
+		mov encrypted[esi], 0
+		mov decrypted[esi], 0
+		inc esi
+		loop L1
+	mov stringLen, 0
+
+	mov ECX, 10
+	mov esi, 0
+	L2:
+		mov key[esi], 0
+		inc esi
+		loop L2
+	mov keyLen, 0
+
+	mov ECX, 51
+	mov esi, 0
+	L3:
+		mov tempStr[esi], 0
+		inc esi
+		loop L3
+ret
+Init ENDP
 END main
