@@ -14,8 +14,7 @@
 #define	FAUCET		7
 #define DISCHARGE	8
 
-class ofApp : public ofBaseApp{
-
+class ofApp : public ofBaseApp {
 	public:
 		void setup();
 		void update();
@@ -23,7 +22,7 @@ class ofApp : public ofBaseApp{
 
 		void keyPressed(int key);
 		void keyReleased(int key);
-		void mouseMoved(int x, int y );
+		void mouseMoved(int x, int y);
 		void mouseDragged(int x, int y, int button);
 		void mousePressed(int x, int y, int button);
 		void mouseReleased(int x, int y, int button);
@@ -33,25 +32,27 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 
+		void setMenu();
+
 		void drawGrid(int interval);
 		void drawLines();
 		void drawDots();
 		void drawMenu();
 
-		ofVec2f getIconBoxX(int iconIndex);
-
 		void updateIconClick();
 		void changeMode(int x, int y);
 		void inactivateModes();
-		
+
 		void undo();
 		void redo();
 
 		void setErrorMessage(string message);
 		void printErrorMessage();
 
-		// icon
+		// menu & icon
+		ofRectangle menuBox;
 		ofImage icon[MODE_CNT];
+		ofRectangle iconBox[MODE_CNT];
 		// faucet RGB : 235, 125, 22
 		// water RGB : 18, 115, 235
 
@@ -61,7 +62,6 @@ class ofApp : public ofBaseApp{
 
 		// mode
 		bool mode[MODE_CNT] = { false, };
-
 		bool waterFlowing = false;
 		bool waterDraining = false;
 

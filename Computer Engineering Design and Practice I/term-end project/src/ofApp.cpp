@@ -5,16 +5,7 @@ void ofApp::setup(){
 	ofSetBackgroundColor(255);
 	ofSetFrameRate(60);
 
-	// Load the icon images
-	icon[UNDO].load("image/icon_undo.png");
-	icon[REDO].load("image/icon_redo.png");
-	icon[DOT].load("image/icon_dot.png");
-	icon[LINE].load("image/icon_line.png");
-	icon[DELETE].load("image/icon_delete.png");
-	icon[ROTATE_DOT].load("image/icon_rotate_dot.png");
-	icon[ROTATE_LINE].load("image/icon_rotate_line.png");
-	icon[FAUCET].load("image/icon_faucet.png");
-	icon[DISCHARGE].load("image/icon_discharge.png");
+	setMenu();
 
 	// Set the error message font
 	errorFont.load("verdana.ttf", 20, true, true);
@@ -89,6 +80,34 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
 
+// Set the variables associated with the menu
+void ofApp::setMenu() {
+	// Set the menu box
+	menuBox.x = 0;
+	menuBox.y = 0;
+	menuBox.width = 16 + (32 + 16) * MODE_CNT;
+	menuBox.height = 64;
+
+	// Load the icon images
+	icon[UNDO].load("image/icon_undo.png");
+	icon[REDO].load("image/icon_redo.png");
+	icon[DOT].load("image/icon_dot.png");
+	icon[LINE].load("image/icon_line.png");
+	icon[DELETE].load("image/icon_delete.png");
+	icon[ROTATE_DOT].load("image/icon_rotate_dot.png");
+	icon[ROTATE_LINE].load("image/icon_rotate_line.png");
+	icon[FAUCET].load("image/icon_faucet.png");
+	icon[DISCHARGE].load("image/icon_discharge.png");
+
+	// Set the icon boxes
+	for (int iconIndex = UNDO; iconIndex <= DISCHARGE; iconIndex++) {
+		iconBox[iconIndex].x = 16 + (32 + 16) * iconIndex - 8;
+		iconBox[iconIndex].y = 16 - 8;
+		iconBox[iconIndex].width = 48;
+		iconBox[iconIndex].height = 48;
+	}
+}
+
 void ofApp::drawGrid(int interval) {
 	int i;
 	
@@ -111,14 +130,15 @@ void ofApp::drawMenu() {
 	ofSetColor(240);
 
 	// Draw the menu area
-	ofDrawRectangle(0, 0, 16 + (32 + 16) * MODE_CNT, 64);
+	ofDrawRectangle(menuBox);
 
 	// Deepen the background color of the icon the cursor points to
 	if (16 - 4 <= ofGetMouseY() && ofGetMouseY() <= 64 - 16 + 4)
 		for(int iconIndex = UNDO; iconIndex <= DISCHARGE; iconIndex++)
-			if (getIconBoxX(iconIndex).x <= ofGetMouseX() && ofGetMouseX() <= getIconBoxX(iconIndex).y) {
+			if (iconBox[iconIndex].getMinX() <= ofGetMouseX() &&
+				ofGetMouseX() <= iconBox[iconIndex].getMaxX()) {
 				ofSetColor(210);
-				ofDrawRectangle(16 + (32 + 16) * iconIndex - 8, 8, 48, 48);
+				ofDrawRectangle(iconBox[iconIndex]);
 				break;
 			}
 
@@ -127,23 +147,17 @@ void ofApp::drawMenu() {
 	ofSetColor(180);
 	for(int iconIndex = UNDO; iconIndex <= DISCHARGE; iconIndex++)
 		if (mode[iconIndex]) {
-			ofDrawRectangle(16 + (32 + 16) * iconIndex - 8, 8, 48, 48);
+			ofDrawRectangle(iconBox[iconIndex]);
 		}
 
 	// when left-clicked
 	if (iconClicked)
-		ofDrawRectangle(16 + (32 + 16) * iconIndex_clicked - 8, 8, 48, 48);
+		ofDrawRectangle(iconBox[iconIndex_clicked]);
 
 	// Draw the icons
 	ofSetColor(210);		// Set the brightness of the icons to (210/255) * 100%
 	for (int iconIndex = UNDO; iconIndex <= DISCHARGE; iconIndex++)
 		icon[iconIndex].draw(16 + (32 + 16) * iconIndex, 16);
-}
-
-// Get the left-end X coordinate and the right-end Y coordinate of the icon box
-// Member variable x, y of the returned instance is actually each of the above
-ofVec2f ofApp::getIconBoxX(int iconIndex) {
-	return ofVec2f(16 + (32 + 16) * iconIndex - 4, 16 + (32 + 16) * iconIndex + 32 + 4);
 }
 
 void ofApp::updateIconClick() {
@@ -152,8 +166,8 @@ void ofApp::updateIconClick() {
 	if (!iconClicked)
 		if (16 - 4 <= ofGetMouseY() && ofGetMouseY() <= 64 - 16 + 4)
 			for (iconIndex_clicked = UNDO; iconIndex_clicked <= DISCHARGE; iconIndex_clicked++)
-				if (getIconBoxX(iconIndex_clicked).x <= ofGetMouseX() &&
-					ofGetMouseX() <= getIconBoxX(iconIndex_clicked).y)
+				if (iconBox[iconIndex_clicked].getMinX() <= ofGetMouseX() &&
+					ofGetMouseX() <= iconBox[iconIndex_clicked].getMaxX())
 					if (ofGetMousePressed(0)) {
 						iconClicked = true;
 						break;
@@ -171,7 +185,7 @@ void ofApp::updateIconClick() {
 void ofApp::changeMode(int x, int y) {
 	if (16 - 4 <= y && y <= 64 - 16 + 4) {
 		for (int modeIndex = UNDO; modeIndex <= FAUCET; modeIndex++)
-			if (getIconBoxX(modeIndex).x <= x && x <= getIconBoxX(modeIndex).y) {
+			if (iconBox[modeIndex].getMinX() <= x && x <= iconBox[modeIndex].getMaxX()) {
 				if (!waterFlowing && !waterDraining)
 					if (mode[modeIndex])
 						mode[modeIndex] = false;
@@ -193,11 +207,13 @@ void ofApp::changeMode(int x, int y) {
 				inactivateModes();
 				mode[ROTATE_DOT] = mode[ROTATE_LINE] = false;
 				// TO DO
+				waterFlowing = true;
 				mode[DISCHARGE] = true;
 			}
 			
 			else {
 				//TO DO
+				waterFlowing = true;
 				mode[DISCHARGE] = false;
 			}
 		}
@@ -206,7 +222,7 @@ void ofApp::changeMode(int x, int y) {
 
 // Inactivate all modes except the rotate modes
 void ofApp::inactivateModes() {
-	for (int modeIndex = UNDO; modeIndex <= DISCHARGE; modeIndex++)
+	for (int modeIndex = UNDO; modeIndex <= FAUCET; modeIndex++)
 		if (modeIndex != ROTATE_DOT && modeIndex != ROTATE_LINE)
 			mode[modeIndex] = false;
 }
