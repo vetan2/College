@@ -133,14 +133,12 @@ void ofApp::drawMenu() {
 	ofDrawRectangle(menuBox);
 
 	// Deepen the background color of the icon the cursor points to
-	if (16 - 4 <= ofGetMouseY() && ofGetMouseY() <= 64 - 16 + 4)
-		for(int iconIndex = UNDO; iconIndex <= DISCHARGE; iconIndex++)
-			if (iconBox[iconIndex].getMinX() <= ofGetMouseX() &&
-				ofGetMouseX() <= iconBox[iconIndex].getMaxX()) {
-				ofSetColor(210);
-				ofDrawRectangle(iconBox[iconIndex]);
-				break;
-			}
+	for (int iconIndex = UNDO; iconIndex <= DISCHARGE; iconIndex++)
+		if (iconBox[iconIndex].inside(ofGetMouseX(), ofGetMouseY())) {
+			ofSetColor(210);
+			ofDrawRectangle(iconBox[iconIndex]);
+			break;
+		}
 
 	// More deepen the background color of the icon corresponding to the active mode or left-clicked
 	// when activated
@@ -164,58 +162,54 @@ void ofApp::updateIconClick() {
 	// If an icon is left-clicked,
 	// then set iconIndex_clicked to the index of the clicked icon and iconClicked to true
 	if (!iconClicked)
-		if (16 - 4 <= ofGetMouseY() && ofGetMouseY() <= 64 - 16 + 4)
-			for (iconIndex_clicked = UNDO; iconIndex_clicked <= DISCHARGE; iconIndex_clicked++)
-				if (iconBox[iconIndex_clicked].getMinX() <= ofGetMouseX() &&
-					ofGetMouseX() <= iconBox[iconIndex_clicked].getMaxX())
-					if (ofGetMousePressed(0)) {
-						iconClicked = true;
-						break;
-					}
+		for (iconIndex_clicked = UNDO; iconIndex_clicked <= DISCHARGE; iconIndex_clicked++)
+			if (iconBox[iconIndex_clicked].inside(ofGetMouseX(), ofGetMouseY()) && ofGetMousePressed(0)) {
+				iconClicked = true;
+				break;
+			}
 
 	// If the click is off in the location of the clicked icon box,
 	// then try changing the mode, and set iconClicked to false
 	if (iconClicked && !ofGetMousePressed(0)) {
 		int x = ofGetMouseX(), y = ofGetMouseY();
-		changeMode(x, y);
+		if(iconBox[iconIndex_clicked].inside(x, y))
+			changeMode(x, y);
 		iconClicked = false;
 	}
 }
 
 void ofApp::changeMode(int x, int y) {
-	if (16 - 4 <= y && y <= 64 - 16 + 4) {
-		for (int modeIndex = UNDO; modeIndex <= FAUCET; modeIndex++)
-			if (iconBox[modeIndex].getMinX() <= x && x <= iconBox[modeIndex].getMaxX()) {
-				if (!waterFlowing && !waterDraining)
-					if (mode[modeIndex])
-						mode[modeIndex] = false;
-					else {
-						inactivateModes();
-						if (modeIndex != ROTATE_DOT && modeIndex != ROTATE_LINE)
-							mode[ROTATE_DOT] = mode[ROTATE_LINE] = false;
-						mode[modeIndex] = true;
-					}
-				else if (waterFlowing)
-					setErrorMessage("Please turn off the faucet first.");
-				else if (waterDraining)
-					setErrorMessage("Please wait for the water to drain.");
-				return;
-			}
+	for (int modeIndex = UNDO; modeIndex <= FAUCET; modeIndex++)
+		if (iconBox[modeIndex].inside(x, y)) {
+			if (!waterFlowing && !waterDraining)
+				if (mode[modeIndex])
+					mode[modeIndex] = false;
+				else {
+					inactivateModes();
+					if (modeIndex != ROTATE_DOT && modeIndex != ROTATE_LINE)
+						mode[ROTATE_DOT] = mode[ROTATE_LINE] = false;
+					mode[modeIndex] = true;
+				}
+			else if (waterFlowing)
+				setErrorMessage("Please turn off the faucet first.");
+			else if (waterDraining)
+				setErrorMessage("Please wait for the water to drain.");
+			return;
+		}
 
-		if (getIconBoxX(DISCHARGE).x <= x && x <= getIconBoxX(DISCHARGE).y) {
-			if (!mode[DISCHARGE]) {
-				inactivateModes();
-				mode[ROTATE_DOT] = mode[ROTATE_LINE] = false;
-				// TO DO
-				waterFlowing = true;
-				mode[DISCHARGE] = true;
-			}
-			
-			else {
-				//TO DO
-				waterFlowing = true;
-				mode[DISCHARGE] = false;
-			}
+	if (iconBox[DISCHARGE].inside(x, y)) {
+		if (!mode[DISCHARGE]) {
+			inactivateModes();
+			mode[ROTATE_DOT] = mode[ROTATE_LINE] = false;
+			// TO DO
+			waterFlowing = true;
+			mode[DISCHARGE] = true;
+		}
+
+		else {
+			//TO DO
+			waterFlowing = false;
+			mode[DISCHARGE] = false;
 		}
 	}
 }
