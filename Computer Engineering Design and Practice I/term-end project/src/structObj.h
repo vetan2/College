@@ -29,6 +29,7 @@ class structSet {
 	public:
 		int dotCnt;
 		dotObj* dot;
+		int faucetCnt;
 
 		int lineCnt;
 		lineObj* line;

@@ -2,11 +2,14 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+	ofSetWindowTitle("WaterFall");
 	ofSetBackgroundColor(255);
 	ofSetFrameRate(60);
 
 	setMenu();
 	setStructSet();
+	waterFlowSpeed = 10;
+	waterDischargeCycle = 10;
 
 	// Set the error message font
 	errorFont.load("verdana.ttf", 20, true, true);
@@ -21,6 +24,9 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 	drawGrid(16);
+	// If there is any water object to draw, then draw them
+	if (waterFlowing || waterDraining)
+		drawWater(tempDot.radius * 2 / 3);
 	drawDots();
 	drawLines();
 	drawMenu();
@@ -34,7 +40,28 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
+	if (key == 'q') {
+		if (!waterFlowing && !waterDraining) {
+			structSet* toDel;
 
+			while (structQueue_rear) {
+				toDel = structQueue_rear;
+				structQueue_rear = structQueue_rear->next;
+
+				delete toDel->dot;
+				delete toDel->line;
+				delete toDel;
+			}
+
+			ofExit(0);
+		}
+
+		else if (waterFlowing)
+			setErrorMessage("Please turn off the faucet first.");
+
+		else if (waterDraining)
+			setErrorMessage("Please wait for the water to drain.");
+	}
 }
 
 //--------------------------------------------------------------
@@ -51,6 +78,7 @@ void ofApp::mouseDragged(int x, int y, int button){
 void ofApp::mousePressed(int x, int y, int button){
 	if (!isClicked)
 		if (button == 0) {
+			// Store position where the button was first pressed
 			mousePressedPos = ofVec2f(x, y);
 			isClicked = true;
 		}
@@ -60,6 +88,7 @@ void ofApp::mousePressed(int x, int y, int button){
 void ofApp::mouseReleased(int x, int y, int button) {
 	if(isClicked)
 		if (button == 0) {
+			// Store position where the button was released
 			mouseReleasedPos = ofVec2f(x, y);
 			isClicked = false;
 		}
@@ -132,7 +161,20 @@ void ofApp::drawGrid(int interval) {
 		ofDrawLine(0, i, ofGetWidth(), i);
 }
 
+void ofApp::drawWater(float radius) {
+	for (int waterIndex = 0; waterIndex < structQueue_cur->faucetCnt; waterIndex++) {
+		waterIndexNode* cur = waterIndexQueue_rear[waterIndex];
+
+		ofSetColor(18, 115, 235);
+		while (cur) {
+			ofDrawCircle(water[waterIndex].path[(int)floor(cur->index)], radius);
+			cur = cur->link;
+		}
+	}
+}
+
 void ofApp::drawDots() {
+	// If DOT mode is activated, then draw a dot at the position of the cursor
 	if (mode[DOT]) {
 		if (!isClicked)
 			ofSetColor(210);
@@ -141,14 +183,17 @@ void ofApp::drawDots() {
 		ofDrawCircle(ofGetMouseX(), ofGetMouseY(), tempDot.radius);
 	}
 
+	// Draw stored dot objects
 	if (structQueue_cur)
 		for (int dotIndex = 0; dotIndex < structQueue_cur->dotCnt; dotIndex++)
 			structQueue_cur->dot[dotIndex].draw();
 }
 
 void ofApp::drawLines() {
+	// If LINE mode is activated,
+	//	then draw dots and lines according to each step and the position of the cursor
+	// The description of each step is given in the RunMode() function
 	if (mode[LINE]) {
-		// TODO
 		if (!step[0]) {
 			ofSetColor(180);
 			ofDrawCircle(ofGetMouseX(), ofGetMouseY(), tempLine.width);
@@ -159,27 +204,24 @@ void ofApp::drawLines() {
 			ofDrawCircle(ofGetMouseX(), ofGetMouseY(), tempLine.width);
 		}
 
-		if (step[1] && !step[2]) {
+		if (step[1]) {
+			// Draw a line that connects the dot created first and the cursor
 			ofSetColor(150);
 			ofDrawCircle(tempLine.pos1, tempLine.width * 2 / 3);
 			ofSetLineWidth(tempLine.width);
 			ofDrawLine(tempLine.pos1.x, tempLine.pos1.y, ofGetMouseX(), ofGetMouseY());
 
-			ofSetColor(180);
-			ofDrawCircle(ofGetMouseX(), ofGetMouseY(), tempLine.width);
-		}
+			// If you've entered step[2], then deepen the point of the cursor
+			if (step[2])
+				ofSetColor(150);
+			else
+				ofSetColor(180);
 
-		if (step[2]) {
-			ofSetColor(150);
-			ofDrawCircle(tempLine.pos1, tempLine.width * 2 / 3);
-			ofSetLineWidth(tempLine.width);
-			ofDrawLine(tempLine.pos1.x, tempLine.pos1.y, ofGetMouseX(), ofGetMouseY());
-
-			ofSetColor(150);
 			ofDrawCircle(ofGetMouseX(), ofGetMouseY(), tempLine.width);
 		}
 	}
 
+	// Draw stored line objects
 	if (structQueue_cur)
 		for (int lineIndex = 0; lineIndex < structQueue_cur->lineCnt; lineIndex++)
 			structQueue_cur->line[lineIndex].draw();
@@ -239,8 +281,11 @@ void ofApp::handleIconClick() {
 }
 
 void ofApp::changeMode(ofVec2f mousePos) {
+	// Locate the icon box(UNDO~FAUCET) where the mousePos is located
 	for (int modeIndex = UNDO; modeIndex <= FAUCET; modeIndex++)
 		if (iconBox[modeIndex].inside(mousePos)) {
+			// If the corresponding icon box found,
+			//	then turn on/off the mode only if water does not flow
 			if (!waterFlowing && !waterDraining) {
 				step[0] = step[1] = step[2] = false;
 
@@ -252,6 +297,9 @@ void ofApp::changeMode(ofVec2f mousePos) {
 					mode[modeIndex] = true;
 				}
 			}
+
+			// If the corresponding icon box found but water is flowing,
+			//	then print proper error message
 			else if (waterFlowing)
 				setErrorMessage("Please turn off the faucet first.");
 			else if (waterDraining)
@@ -259,52 +307,68 @@ void ofApp::changeMode(ofVec2f mousePos) {
 			return;
 		}
 
+	// If mousePos is located at DISCHARGE icon box,
+	//	then handle water objects and function that handle them
 	if (iconBox[DISCHARGE].inside(mousePos)) {
 		if (!mode[DISCHARGE]) {
-			inactivateModes();
-			// TO DO
-			waterFlowing = true;
-			mode[DISCHARGE] = true;
+			// If water is still draining,
+			//	then print proper error message
+			if (waterDraining)
+				setErrorMessage("Please wait for the water to drain.");
+
+			else {
+				inactivateModes();
+				mode[DISCHARGE] = true;
+			}
 		}
 
 		else {
-			//TO DO
 			waterFlowing = false;
+			waterDraining = true;
 			mode[DISCHARGE] = false;
 		}
 	}
 }
 
-// Inactivate all modes
 void ofApp::inactivateModes() {
+	// Inactivate all modes
 	for (int modeIndex = UNDO; modeIndex <= FAUCET; modeIndex++)
 		mode[modeIndex] = false;
 }
 
 void ofApp::runMode() {
+	// Perform undoing function and turn off UNDO mode
 	if (mode[UNDO]) {
 		undo();
 		mode[UNDO] = false;
 	}
 
+	// Perform redoing function and turn off REDO mode
 	if (mode[REDO]) {
 		redo();
 		mode[REDO] = false;
 	}
 
+	// step[0] : The left button of the mouse is pressed
 	if (mode[DOT]) {
 		if (!step[0])
 			if (isClicked)
 				step[0] = true;
 
 		if(step[0])
+			// In step[0], if the left button of the mouse is released,
+			//	then try to add a new dot
 			if (!isClicked) {
 				if (checkPos(mouseReleasedPos))
 					addDot(mouseReleasedPos);
+				// Go back to the condition not in step[0]
 				step[0] = false;
 			}
 	}
 
+	// step[0] : The left button of the mouse is first pressed
+	// step[1] : The left button of the mouse is first released
+	// step[2] : The left button of the mouse is second pressed
 	if (mode[LINE]) {
 		if (!step[0])
 			if (isClicked)
@@ -343,39 +407,104 @@ void ofApp::runMode() {
 
 	if (mode[ERASE])
 		if (isClicked) {
+			// Locate the dot at the position of the cursor
 			for (int dotIndex = 0; dotIndex < structQueue_cur->dotCnt; dotIndex++)
 				if (structQueue_cur->dot[dotIndex].distance(ofVec2f(ofGetMouseX(), ofGetMouseY()))
 					< (float)tempDot.radius * 2)
-					deleteStruct(DOT, dotIndex);
-
+						deleteStruct(DOT, dotIndex);
+					
+			// Locate the line at the position of the cursor
 			for (int lineIndex = 0; lineIndex < structQueue_cur->lineCnt; lineIndex++)
 				if (structQueue_cur->line[lineIndex].distance(ofVec2f(ofGetMouseX(), ofGetMouseY()))
 					< (float)tempLine.width)
 					deleteStruct(LINE, lineIndex);
 		}
 
+	// step[0] : The left button of the mouse is pressed
 	if (mode[FAUCET]) {
 		if (!step[0])
 			if (isClicked)
 				step[0] = true;
 
-		if (step[0]) {
-			if (!isClicked) {
-				for (int dotIndex = 0; dotIndex < structQueue_cur->dotCnt; dotIndex++) {
-					if (structQueue_cur->dot[dotIndex].distance(mousePressedPos) < (float)tempDot.radius * 2) {
+		if (step[0])
+			if (!isClicked)
+				// Locate the dot at the position of the cursor pressed
+				for (int dotIndex = 0; dotIndex < structQueue_cur->dotCnt; dotIndex++)
+					if (structQueue_cur->dot[dotIndex].distance(mousePressedPos) < (float)tempDot.radius * 2)
+						// Check whether the position of the cursor released is inside the same dot
 						if (structQueue_cur->dot[dotIndex].distance(mouseReleasedPos)
 							< (float)tempDot.radius * 2) {
-							if(!structQueue_cur->dot[dotIndex].faucet)
-								structQueue_cur->dot[dotIndex].faucet = true;
-							else
-								structQueue_cur->dot[dotIndex].faucet = false;
+							editFaucet(dotIndex);
+								
 							step[0] = false;
 						}
-					}
+	}
+
+	if (mode[DISCHARGE])
+		if (!waterFlowing && !waterDraining) {
+			// Check whether there is any faucet
+			for (int dotIndex = 0; dotIndex < structQueue_cur->dotCnt; dotIndex++) {
+				if (structQueue_cur->dot[dotIndex].faucet)
+					break;
+
+				// If not, then print proper error message
+				if (dotIndex == structQueue_cur->dotCnt - 1) {
+					setErrorMessage("There is no faucet.");
+					mode[DISCHARGE] = false;
+					return;
 				}
 			}
-		}	
-	}
+
+			// Allocate memories for water objects and waterIndexQueue
+			water = new waterObj[structQueue_cur->faucetCnt];
+			waterIndexQueue_front
+				= (waterIndexNode * *)calloc(structQueue_cur->faucetCnt, sizeof(waterIndexNode*));
+			waterIndexQueue_rear
+				= (waterIndexNode * *)calloc(structQueue_cur->faucetCnt, sizeof(waterIndexNode*));
+
+			// Calculate path of the water
+			int waterIndex = -1;
+			for (int dotIndex = 0; dotIndex < structQueue_cur->dotCnt; dotIndex++) {
+				if (structQueue_cur->dot[dotIndex].faucet) {
+					water[++waterIndex].init(
+						structQueue_cur->line,
+						structQueue_cur->lineCnt,
+						structQueue_cur->dot[dotIndex].pos
+					);
+
+					water[waterIndex].calcPath();
+				}
+			}
+
+			// After the calculation, discharge water
+			waterFlowing = true;
+		}
+
+	// If water is flowing, then update indexes used in drawWater() function
+	if (waterFlowing || waterDraining)
+		for (int waterIndex = 0; waterIndex < structQueue_cur->faucetCnt; waterIndex++)
+			updateWaterIndex(
+				waterIndexQueue_front + waterIndex,
+				waterIndexQueue_rear + waterIndex,
+				water[waterIndex].pathCnt
+			);
+
+	if (waterDraining)
+		for (int waterIndex = 0; waterIndex < structQueue_cur->faucetCnt; waterIndex++) {
+			if (waterIndexQueue_front[waterIndex])
+				break;
+
+			// If water has drained, then release allocated memory for water objects and waterIndexQueue
+			if (waterIndex == structQueue_cur->faucetCnt - 1) {
+				waterObj* toDel = water;
+				if (toDel)
+					delete water;
+				water = NULL;
+
+				// Finish draining
+				waterDraining = false;
+			}
+		}
 }
 
 void ofApp::undo() {
@@ -395,113 +524,53 @@ void ofApp::redo() {
 }
 
 void ofApp::addDot(ofVec2f pos) {
-	structSet* newSet = new structSet;
-	structSet* toDel;
+	structSet* newSet = (structSet*)calloc(1, sizeof(structSet));
 
-	structSet* temp = structQueue_cur->next;
-	while (temp) {
-		toDel = temp;
-		temp = temp->next;
-		delete toDel;
-		structSetCnt--;
-	}
-	structQueue_front = structQueue_cur;
-	structQueue_front->next = NULL;
+	addSetInQueue(newSet);
 
-	if (structSetCnt > MAX_STRUCT_SET) {
-		toDel = structQueue_rear;
-		structQueue_rear = structQueue_rear->next;
-		delete toDel;
-
-		structQueue_rear->prev = NULL;
-		structSetCnt--;
-	}
-
+	// Set count variables of newSet
 	newSet->dotCnt = structQueue_cur->dotCnt + 1;
 	newSet->lineCnt = structQueue_cur->lineCnt;
 
+	// Allocate memories for structure objects of newSet
 	newSet->dot = new dotObj[newSet->dotCnt];
 	newSet->line = new lineObj[newSet->lineCnt];
 	
+	// Fill allocated memories ofnewSet
 	copyStructSet(DOT, newSet, structQueue_cur);
 	copyStructSet(LINE, newSet, structQueue_cur);
 	newSet->dot[newSet->dotCnt - 1].pos = pos;
 
-	structQueue_front->next = newSet;
-	newSet->prev = structQueue_front;
-	newSet->next = NULL;
-	structQueue_front = newSet;
-
-	structSetCnt++;
 	structQueue_cur = newSet;
 }
 
 void ofApp::addLine(ofVec2f pos1, ofVec2f pos2) {
-	structSet* newSet = new structSet;
-	structSet* toDel;
+	structSet* newSet = (structSet*)calloc(1, sizeof(structSet));
+	addSetInQueue(newSet);
 
-	structSet* temp = structQueue_cur->next;
-	while (temp) {
-		toDel = temp;
-		temp = temp->next;
-		delete toDel;
-		structSetCnt--;
-	}
-	structQueue_front = structQueue_cur;
-	structQueue_front->next = NULL;
-
-	if (structSetCnt > MAX_STRUCT_SET) {
-		toDel = structQueue_rear;
-		structQueue_rear = structQueue_rear->next;
-		delete toDel;
-
-		structQueue_rear->prev = NULL;
-		structSetCnt--;
-	}
-
+	// Set count variables of newSet
 	newSet->dotCnt = structQueue_cur->dotCnt;
 	newSet->lineCnt = structQueue_cur->lineCnt + 1;
 
+	// Allocate memories for structure objects of newSet
 	newSet->dot = new dotObj[newSet->dotCnt];
 	newSet->line = new lineObj[newSet->lineCnt];
 
+	// Fill allocated memories ofnewSet
 	copyStructSet(DOT, newSet, structQueue_cur);
 	copyStructSet(LINE, newSet, structQueue_cur);
 	newSet->line[newSet->lineCnt - 1].pos1 = pos1;
 	newSet->line[newSet->lineCnt - 1].pos2 = pos2;
 
-	structQueue_front->next = newSet;
-	newSet->prev = structQueue_front;
-	newSet->next = NULL;
-	structQueue_front = newSet;
-
-	structSetCnt++;
 	structQueue_cur = newSet;
 }
 
 void ofApp::deleteStruct(int sort, int indexToDel) {
-	structSet* newSet = new structSet;
-	structSet* toDel;
+	structSet* newSet = (structSet*)calloc(1, sizeof(structSet));
+	
+	addSetInQueue(newSet);
 
-	structSet* temp = structQueue_cur->next;
-	while (temp) {
-		toDel = temp;
-		temp = temp->next;
-		delete toDel;
-		structSetCnt--;
-	}
-	structQueue_front = structQueue_cur;
-	structQueue_front->next = NULL;
-
-	if (structSetCnt > MAX_STRUCT_SET) {
-		toDel = structQueue_rear;
-		structQueue_rear = structQueue_rear->next;
-		delete toDel;
-
-		structQueue_rear->prev = NULL;
-		structSetCnt--;
-	}
-
+	// Set count variables of newSet
 	newSet->dotCnt = structQueue_cur->dotCnt;
 	newSet->lineCnt = structQueue_cur->lineCnt;
 	if (sort == DOT)
@@ -509,15 +578,24 @@ void ofApp::deleteStruct(int sort, int indexToDel) {
 	else if(sort == LINE)
 		newSet->lineCnt--;
 
+	// Allocate memories for structure objects of newSet
 	newSet->dot = new dotObj[newSet->dotCnt];
 	newSet->line = new lineObj[newSet->lineCnt];
 
+	// Fill allocated memories ofnewSet
 	if (sort == DOT) {
 		copyStructSet(LINE, newSet, structQueue_cur);
-		for (int dotIndex = 0; dotIndex < indexToDel; dotIndex++)
+		for (int dotIndex = 0; dotIndex < indexToDel; dotIndex++) {
 			newSet->dot[dotIndex] = structQueue_cur->dot[dotIndex];
-		for (int dotIndex = indexToDel; dotIndex < newSet->dotCnt; dotIndex++)
+			if (newSet->dot[dotIndex].faucet)
+				newSet->faucetCnt++;
+		}
+		
+		for (int dotIndex = indexToDel; dotIndex < newSet->dotCnt; dotIndex++) {
 			newSet->dot[dotIndex] = structQueue_cur->dot[dotIndex + 1];
+			if (newSet->dot[dotIndex].faucet)
+				newSet->faucetCnt++;
+		}
 	}
 	else if (sort == LINE) {
 		copyStructSet(DOT, newSet, structQueue_cur);
@@ -527,13 +605,71 @@ void ofApp::deleteStruct(int sort, int indexToDel) {
 			newSet->line[lineIndex] = structQueue_cur->line[lineIndex + 1];
 	}
 
-	structQueue_front->next = newSet;
-	newSet->prev = structQueue_front;
-	newSet->next = NULL;
-	structQueue_front = newSet;
-
-	structSetCnt++;
 	structQueue_cur = newSet;
+}
+
+void ofApp::editFaucet(int dotIndex) {
+	structSet* newSet = (structSet*)calloc(1, sizeof(structSet));
+
+	addSetInQueue(newSet);
+
+	// Set count variables of newSet
+	newSet->dotCnt = structQueue_cur->dotCnt;
+	newSet->lineCnt = structQueue_cur->lineCnt;
+
+	// Allocate memories for structure objects of newSet
+	newSet->dot = new dotObj[newSet->dotCnt];
+	newSet->line = new lineObj[newSet->lineCnt];
+
+	// Fill allocated memories ofnewSet
+	copyStructSet(DOT, newSet, structQueue_cur);
+	copyStructSet(LINE, newSet, structQueue_cur);
+	if (newSet->dot[dotIndex].faucet) {
+		newSet->dot[dotIndex].faucet = false;
+		newSet->faucetCnt--;
+	}
+	else {
+		newSet->dot[dotIndex].faucet = true;
+		newSet->faucetCnt++;
+	}
+
+	structQueue_cur = newSet;
+}
+
+void ofApp::updateWaterIndex(waterIndexNode** front, waterIndexNode** rear, int maxPathIndex) {
+	waterIndexNode* curNode = *rear;
+
+	// Increase all indexes of the Queue
+	while (curNode) {
+		curNode->index += waterFlowSpeed;
+		curNode = curNode->link;
+	}
+
+	// If the index of the rear is at the end, then pop in Queue
+	if (*rear && (*rear)->index > (float)maxPathIndex) {
+		waterIndexNode* toDel = *rear;
+
+		if (*rear == *front)
+			*rear = *front = NULL;
+		else
+			*rear = (*rear)->link;
+
+		delete toDel;
+	}
+
+	// If water is discharging, then add a new node with an index of 0 at waterDischargeCycle
+	if (waterFlowing)
+		if (ofGetFrameNum() % waterDischargeCycle == 0) {
+			waterIndexNode* newNode = (waterIndexNode*)calloc(1, sizeof(waterIndexNode));
+
+			if (!(*front))
+				* rear = *front = newNode;
+
+			else {
+				(*front)->link = newNode;
+				*front = newNode;
+			}
+		}
 }
 
 bool ofApp::checkPos(ofVec2f pos) {
@@ -558,6 +694,16 @@ bool ofApp::checkPos(ofVec2f pos) {
 bool ofApp::checkPos(ofVec2f pos1, ofVec2f pos2) {
 	if (structSetCnt == 0)
 		return 1;
+
+	if (pos1.x == pos2.x) {
+		setErrorMessage("A line should not be vertical.");
+		return 0;
+	}
+
+	if (pos1.y == pos2.y) {
+		setErrorMessage("A line should not be horizontal.");
+		return 0;
+	}
 
 	for (int lineIndex = 0; lineIndex < structQueue_cur->lineCnt; lineIndex++) {
 		if (structQueue_cur->line[lineIndex].intersectWith(pos1, pos2)) {
@@ -596,13 +742,51 @@ void ofApp::setStructSet() {
 }
 
 void ofApp::copyStructSet(int sort, structSet* dest, structSet* src) {
-	if(sort == DOT)
-		for (int dotIndex = 0; dotIndex < MIN(dest->dotCnt, src->dotCnt); dotIndex++)
+	if (sort == DOT) {
+		dest->faucetCnt = 0;
+
+		for (int dotIndex = 0; dotIndex < MIN(dest->dotCnt, src->dotCnt); dotIndex++) {
 			dest->dot[dotIndex] = src->dot[dotIndex];
+			if (dest->dot[dotIndex].faucet)
+				dest->faucetCnt++;
+		}
+	}
 
 	else if(sort == LINE)
 		for (int lineIndex = 0; lineIndex < MIN(dest->lineCnt, src->lineCnt); lineIndex++)
 			dest->line[lineIndex] = src->line[lineIndex];
+}
+
+void ofApp::addSetInQueue(structSet* newSet) {
+	structSet* toDel;
+
+	// Make structQueue_cur into front of the queue
+	structSet* temp = structQueue_cur->next;
+	while (temp) {
+		toDel = temp;
+		temp = temp->next;
+		delete toDel;
+		structSetCnt--;
+	}
+	structQueue_front = structQueue_cur;
+	structQueue_front->next = NULL;
+
+	// If structQueue is full, then delete the oldest
+	if (structSetCnt > MAX_STRUCT_SET) {
+		toDel = structQueue_rear;
+		structQueue_rear = structQueue_rear->next;
+		delete toDel;
+
+		structQueue_rear->prev = NULL;
+		structSetCnt--;
+	}
+
+	// Connect newSet with structQueue
+	structQueue_front->next = newSet;
+	newSet->prev = structQueue_front;
+	newSet->next = NULL;
+	structQueue_front = newSet;
+	structSetCnt++;
 }
 
 // After calling this function, error message is printed automatically on printErrorMessage()

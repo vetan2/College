@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "structObj.h"
+#include "waterObj.h"
 
 #define MODE_CNT	7
 #define UNDO		0
@@ -12,7 +13,7 @@
 #define	FAUCET		5
 #define DISCHARGE	6
 
-#define MAX_STRUCT_SET 10
+#define MAX_STRUCT_SET 20
 
 class ofApp : public ofBaseApp {
 	public:
@@ -31,6 +32,7 @@ class ofApp : public ofBaseApp {
 		// mode
 		bool mode[MODE_CNT] = { false, };
 		bool step[3] = { false, };
+		float waterRadius;
 		bool waterFlowing = false;
 		bool waterDraining = false;
 
@@ -42,13 +44,20 @@ class ofApp : public ofBaseApp {
 		int errorFontBright = 255;
 		int errorTimer;
 
-		// objects
+		// structure objects
 		structSet* structQueue_front = NULL;
 		structSet* structQueue_rear = NULL;
 		int structSetCnt = 0;
 		structSet* structQueue_cur = NULL;
 		dotObj tempDot;
 		lineObj tempLine;
+
+		// water object
+		float waterFlowSpeed;
+		int waterDischargeCycle;
+		waterObj* water = NULL;
+		waterIndexNode** waterIndexQueue_front = NULL;
+		waterIndexNode** waterIndexQueue_rear = NULL;
 
 	public:
 		void setup();
@@ -73,6 +82,7 @@ class ofApp : public ofBaseApp {
 
 		// Draw
 		void drawGrid(int interval);
+		void drawWater(float radius);
 		void drawDots();
 		void drawLines();
 		void drawMenu();
@@ -89,6 +99,8 @@ class ofApp : public ofBaseApp {
 		void addDot(ofVec2f pos);
 		void addLine(ofVec2f pos1, ofVec2f pos2);
 		void deleteStruct(int sort, int indexToDel);
+		void editFaucet(int dotIndex);
+		void updateWaterIndex(waterIndexNode** front, waterIndexNode** rear, int maxPathIndex);
 
 		// Check if the location of the structure is appropriate or not
 		bool checkPos(ofVec2f pos);
@@ -96,6 +108,7 @@ class ofApp : public ofBaseApp {
 
 		// Copy a structSet
 		void copyStructSet(int sort, structSet* dest, structSet* src);
+		void addSetInQueue(structSet* newSet);
 
 		// Control error message output
 		void setErrorMessage(string message);
