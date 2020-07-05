@@ -162,7 +162,7 @@ void ofApp::createMaze(int N, int M) {
 		mergeRoomSet(curRow, 1);
 	}
 
-	printMaze();
+	// printMaze();
 }
 
 /*--------------------------------------------------------------

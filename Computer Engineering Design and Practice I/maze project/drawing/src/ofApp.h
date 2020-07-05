@@ -29,6 +29,7 @@
 
 struct node {
 	int num;
+	int another;	// queue에서 쓰이는 또하나의 방
 	node* link;
 };
 
@@ -54,23 +55,28 @@ class ofApp : public ofBaseApp {
 		void createGraph();
 		void freeMemory();
 		void DFS();
-		void drawDFS();
+		void stackPush(int);
+		int stackPop();
 		void BFS();
-		void drawBFS();
+		void queuePush(int);
+		int queuePop();
+		void InitNode();
+		void pathPush(node**, int);
 
 		int M = 0, N = 0;		// 미로의 가로와 세로
 		int row = 0, col = 0;	// maze의 행과 열
 		int** maze = NULL;		// 미로 배열
 		node** graph = NULL;	// 미로 그래프
-		int** visited;
-		node* stack = NULL;
-		node* queue = NULL;
+		int* visited;
+		node* stack_bot = NULL;
+		node* stack_top = NULL;
+		node* queue_rear = NULL;
+		node* queue_front = NULL;
+		node* path = NULL;
 		float gridLen;			// 격자의 길이
 
 		bool input_flag = FALSE;
 		bool isOpen;
-		bool isDFS;
-		bool isBFS;
 
 		// Menu
 		ofxWinMenu * menu; // Menu object
@@ -87,7 +93,8 @@ class ofApp : public ofBaseApp {
 		bool bShowInfo;
 		bool bFullscreen;
 		bool bTopmost;
-		bool isdfs;
+		bool isDFS;
+		bool isBFS;
 
 		// Example functions
  		void doFullScreen(bool bFull);

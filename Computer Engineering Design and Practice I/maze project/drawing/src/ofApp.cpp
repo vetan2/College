@@ -41,7 +41,7 @@ void ofApp::setup() {
 	// Get the window size for image loading
 	windowWidth = ofGetWidth();
 	windowHeight = ofGetHeight();
-	isdfs = false;
+	isDFS = false;
 	isOpen = 0;
 	// Centre on the screen
 	ofSetWindowPosition((ofGetScreenWidth()-windowWidth)/2, (ofGetScreenHeight()-windowHeight)/2);
@@ -152,7 +152,13 @@ void ofApp::appMenuFunction(string title, bool bChecked) {
 
 	if(title == "Show BFS") {
 		doTopmost(bChecked); // Use the checked value directly
-
+		if (isOpen)
+		{
+			BFS();
+			bShowInfo = bChecked;
+		}
+		else
+			cout << "you must open file first" << endl;
 	}
 
 	if(title == "Full screen") {
@@ -212,22 +218,67 @@ void ofApp::draw() {
 
 		}
 
-	if (isdfs)
+	if (isDFS)
 	{
-		ofSetColor(200);
-		ofSetLineWidth(5);
-		if (isOpen)
-			drawDFS();
+		if (isOpen) {
+			ofSetLineWidth(5);
+
+			node* temp;
+			int num1, num2;
+
+			ofSetColor(200);
+			temp = path;
+			while (temp->link) {
+				num1 = temp->num - 1;
+				num2 = temp->link->num - 1;
+
+				ofDrawLine(((num1 % N) * 2 + 1) * gridLen, ((num1 / N) * 2 + 1) * gridLen,
+					((num2 % N) * 2 + 1) * gridLen, ((num2 / N) * 2 + 1) * gridLen);
+				ofDrawCircle(((num1 % N) * 2 + 1) * gridLen, ((num1 / N) * 2 + 1) * gridLen, 2.5);
+				ofDrawCircle(((num2 % N) * 2 + 1) * gridLen, ((num2 / N) * 2 + 1) * gridLen, 2.5);
+				temp = temp->link;
+			}
+
+			ofSetColor(39, 174, 96);
+			temp = stack_bot;
+			while (temp->link) {
+				num1 = temp->num - 1;
+				num2 = temp->link->num - 1;
+
+				ofDrawLine(((num1 % N) * 2 + 1) * gridLen, ((num1 / N) * 2 + 1) * gridLen,
+					((num2 % N) * 2 + 1) * gridLen, ((num2 / N) * 2 + 1) * gridLen);
+				ofDrawCircle(((num1 % N) * 2 + 1) * gridLen, ((num1 / N) * 2 + 1) * gridLen, 2.5);
+				ofDrawCircle(((num2 % N) * 2 + 1) * gridLen, ((num2 / N) * 2 + 1) * gridLen, 2.5);
+				temp = temp->link;
+			}
+		}
+
 		else
 			cout << "You must open file first" << endl;
 	}
 
-	if (isdfs)
+	if (isBFS)
 	{
-		ofSetColor(200);
-		ofSetLineWidth(5);
-		if (isOpen)
-			drawDFS();
+		if (isOpen) {
+			ofSetLineWidth(5);
+
+			node* temp;
+			int num1, num2;
+
+			ofSetColor(200);
+			temp = path;
+			while (temp->link) {
+				num1 = temp->num - 1;
+				num2 = temp->link->num - 1;
+
+				ofDrawLine(((num1 % N) * 2 + 1) * gridLen, ((num1 / N) * 2 + 1) * gridLen,
+					((num2 % N) * 2 + 1) * gridLen, ((num2 / N) * 2 + 1) * gridLen);
+				ofDrawCircle(((num1 % N) * 2 + 1) * gridLen, ((num1 / N) * 2 + 1) * gridLen, 2.5);
+				ofDrawCircle(((num2 % N) * 2 + 1) * gridLen, ((num2 / N) * 2 + 1) * gridLen, 2.5);
+				temp = temp->link;
+			}
+		}
+
 		else
 			cout << "You must open file first" << endl;
 	}
@@ -498,6 +549,8 @@ bool ofApp::readFile()
 				gridLen = windowHeight / (float)(row + 10);
 
 			input_flag = TRUE;
+			isDFS = isBFS = FALSE;
+
 			return TRUE;
 		}
 		else {
@@ -526,10 +579,10 @@ void ofApp::createGraph() {
 			graph[num]->num = num, graph[num]->link = NULL;
 			temp = graph[num];
 
-			// 서쪽으로 진행할 수 있을 때(오른쪽에 벽이 없을 때)
+			// 동쪽으로 진행할 수 있을 때(오른쪽에 벽이 없을 때)
 			if (!maze[i][j + 1]) {
 				temp->link = new node;
-				temp = graph[num]->link;
+				temp = temp->link;
 				temp->num = N * ((i - 1) / 2) + (j + 3) / 2;
 				temp->link = NULL;
 			}
@@ -537,37 +590,32 @@ void ofApp::createGraph() {
 			// 남쪽으로 진행할 수 있을 때(아래에 벽이 없을 때)
 			if (!maze[i + 1][j]) {
 				temp->link = new node;
-				temp = graph[num]->link;
+				temp = temp->link;
 				temp->num = N * ((i + 1) / 2) + (j + 1) / 2;
 				temp->link = NULL;
 			}
 
-			// 동쪽으로 진행할 수 있을 때(왼쪽에 벽이 없을 때)
+			// 서쪽으로 진행할 수 있을 때(왼쪽에 벽이 없을 때)
 			if (!maze[i][j - 1]) {
 				temp->link = new node;
-				temp = graph[num]->link;
-				temp->num = N * ((i - 1) / 2) + (j - 3) / 2;
+				temp = temp->link;
+				temp->num = N * ((i - 1) / 2) + (j - 1) / 2;
 				temp->link = NULL;
 			}
 
 			// 북쪽으로 진행할 수 있을 때(위에 벽이 없을 때)
 			if (!maze[i - 1][j]) {
 				temp->link = new node;
-				temp = graph[num]->link;
-				temp->num = N * ((i - 1) / 2) + (j + 1) / 2;
+				temp = temp->link;
+				temp->num = N * ((i - 3) / 2) + (j + 1) / 2;
 				temp->link = NULL;
 			}
 		}
 
 	// visited 생성
-	visited = new int* [M];
-	for (i = 0; i < M; i++) {
-		visited[i] = new int[N];
-
-		// 모두 0으로 초기화
-		for (j = 0; j < N; j++)
-			visited[i][j] = 0;
-	}
+	visited = new int[N * M + 1];
+	for (i = 0; i <= N * M; i++)
+		visited[i] = 0;
 }
 
 // 제거되는 메모리 : maze, graph, visited, stack, queue
@@ -584,46 +632,241 @@ void ofApp::freeMemory() {
 	delete graph;
 	graph = NULL;
 
-	for (i = 0; i < M; i++)
-		delete visited[i];
 	delete visited;
 	visited = NULL;
 
-	temp = stack;
-	while (temp) {
-		toDel = temp;
-		temp = temp->link;
-		delete toDel;
-	}
-	stack = NULL;
-
-	temp = queue;
-	while (temp) {
-		toDel = temp;
-		temp = temp->link;
-		delete toDel;
-	}
-	queue = NULL;
-
+	InitNode();
 	row = 0, col = 0;
 	M = 0, N = 0;
 }
 
 void ofApp::DFS() {
-	//TO DO
-	return;
-}
-void ofApp::drawDFS()
-{
-	//TO DO 
+	isBFS = FALSE;
+	InitNode();
+
+	stack_bot = new node;
+	stack_top = stack_bot;
+	stack_top->num = 1, stack_top->link = NULL;
+
+	visited[1] = 1;
+
+	bool found = FALSE;
+	int num, num_next;
+	node* temp;
+	node* path_top = NULL;
+
+	while (stack_top && !found) {
+		num = stackPop();
+		temp = graph[num];
+
+		pathPush(&path_top, num);
+
+		while (temp->link && !found) {
+			num_next = temp->link->num;
+
+			if (num_next == M * N)
+				found = TRUE;
+
+			else if (!visited[num_next]) {
+				visited[num_next] = 1;
+
+				pathPush(&path_top, num_next);
+				stackPush(num);
+				num = num_next;
+				temp = graph[num_next];
+			}
+
+			else
+				temp = temp->link;
+		}
+	}
+
+	if (found) {
+		stackPush(num), stackPush(M * N);
+		pathPush(&path_top, num), pathPush(&path_top, M * N);
+	}
+
+	/*
+	temp = stack_bot;
+	while (temp) {
+		cout << temp->num << " " << endl;
+		temp = temp->link;
+	}
+	*/
+
+	isDFS = TRUE;
 }
 
-void ofApp::BFS()
-{
-	//TO DO
-	return;
+void ofApp::stackPush(int n) {
+	node* temp = new node;
+	temp->num = n, temp->link = NULL;
+	
+	if (!stack_bot)
+		stack_bot = stack_top = temp;
+
+	else {
+		stack_top->link = temp;
+		stack_top = temp;
+	}
 }
-void ofApp::drawBFS()
-{
-	//TO DO 
+
+int ofApp::stackPop() {
+	if (stack_top) {
+		int num;
+
+		if (stack_bot == stack_top) {
+			num = stack_top->num;
+			delete stack_top;
+			stack_bot = stack_top = NULL;
+			return num;
+		}
+
+		node* toDel = stack_top;
+		for (stack_top = stack_bot; stack_top->link != toDel; stack_top = stack_top->link)
+			;
+		num = toDel->num;
+		delete toDel;
+		return num;
+	}
+
+	return 0;
+}
+void ofApp::BFS() {
+	//TO DO
+	isDFS = FALSE;
+	InitNode();
+
+	queue_front = new node;
+	queue_rear = queue_front;
+	queue_rear->num = 1, queue_rear->link = NULL;
+
+	visited[1] = 1;
+
+	bool found = FALSE;
+	int num, num_next;
+	node* temp;
+	node* path_top = NULL;
+
+	while (queue_rear && !found) {
+		num = queuePop();
+		temp = graph[num];
+
+		pathPush(&path_top, num);
+
+		while (temp->link && !found) {
+			num_next = temp->link->num;
+
+			if (num_next == M * N)
+				found = TRUE;
+
+			else if (!visited[num_next]) {
+				visited[num_next] = 1;
+
+				pathPush(&path_top, num_next);
+				queuePush(num_next);
+				temp = temp->link;
+			}
+
+			else
+				temp = temp->link;
+		}
+	}
+
+	if (found) {
+		stackPush(num), stackPush(M * N);
+		pathPush(&path_top, num), pathPush(&path_top, M * N);
+	}
+
+	/*
+	temp = stack_bot;
+	while (temp) {
+		cout << temp->num << " " << endl;
+		temp = temp->link;
+	}
+	*/
+
+	isBFS = TRUE;
+}
+
+void ofApp::queuePush(int n) {
+	node* temp = new node;
+	temp->num = n, temp->link = NULL;
+
+	if (!queue_rear)
+		queue_rear = queue_front = temp;
+
+	else {
+		queue_rear->link = temp;
+		queue_rear = temp;
+	}
+}
+
+int ofApp::queuePop() {
+	if (queue_front) {
+		int num;
+
+		if (queue_front == queue_rear) {
+			num = queue_front->num;
+			delete queue_front;
+			queue_front = queue_rear = NULL;
+			return num;
+		}
+
+		node* toDel = queue_front;
+		queue_front = queue_front->link;
+		num = toDel->num;
+		delete toDel;
+		return num;
+	}
+
+	return 0;
+}
+
+void ofApp::InitNode() {
+	node* temp;
+	node* toDel;
+
+	temp = stack_bot;
+	while (temp) {
+		toDel = temp;
+		temp = temp->link;
+		delete toDel;
+	}
+	stack_bot = stack_top = NULL;
+
+	temp = queue_front;
+	while (temp) {
+		toDel = temp;
+		temp = temp->link;
+		delete toDel;
+	}
+	queue_rear = queue_front = NULL;
+
+	temp = path;
+	while (temp) {
+		toDel = temp;
+		temp = temp->link;
+		delete toDel;
+	}
+	path = NULL;
+
+	if (visited) {
+		int i;
+		for (i = 0; i <= N * M; i++)
+			visited[i] = 0;
+	}
+}
+
+void ofApp::pathPush(node** path_top, int num) {
+	if (*path_top) {
+		(*path_top)->link = new node;
+		(*path_top) = (*path_top)->link;
+		(*path_top)->num = num, (*path_top)->link = NULL;
+	}
+	
+	else {
+		path = new node;
+		path->num = num, path->link = NULL;
+		(*path_top) = path;
+	}
 }
