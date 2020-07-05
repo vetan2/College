@@ -20,7 +20,7 @@ https://openframeworks.cc/download/
 
 **1. Press the L key on the initial screen to open the window to select input file.**
 
-&nbsp;&nbsp;The input file consists of the number of dots, the coordinates of the dots, the number of lines, and the coordinates of the two points that form the lines.
+&nbsp;&nbsp;The input file consists of the number of lines, and the coordinates of the two points that form the lines, the number of dots, the coordinates of the dots.
 
 *Example)*
 
