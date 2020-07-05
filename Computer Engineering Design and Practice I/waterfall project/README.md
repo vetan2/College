@@ -18,7 +18,7 @@ https://openframeworks.cc/download/
 
 **1. Press the L key on the initial screen to open the window to select input file.**
 
-The input file consists of the number of dots, the coordinates of the dots, the number of lines, and the coordinates of the two points that form the lines.
+&nbsp;&nbsp;The input file consists of the number of dots, the coordinates of the dots, the number of lines, and the coordinates of the two points that form the lines.
 
 *Example)*
 
@@ -41,6 +41,6 @@ The input file consists of the number of dots, the coordinates of the dots, the 
 
 **3. Press the S/E key to draw/erase the water flowing.**
 
-The dot where water flows out can be set through the directional key while the water is not flowing out.
+&nbsp;&nbsp;The dot where water flows out can be set through the directional key while the water is not flowing out.
 
 **4. Press the Q key to exit the program.**
