@@ -2,6 +2,8 @@
 
 The second project of this class. It draws on screen some lines and dots, water flowing out of a dot and along the lines.
 
+<img src="./images/intro_1.PNG" width="480">
+
 This program is written in C++.
 
 ---
